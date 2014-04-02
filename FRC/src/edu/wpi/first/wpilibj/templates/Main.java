@@ -29,8 +29,20 @@ public class Main extends SimpleRobot {
     final int BBUTTON = 2;
     final int XBUTTON = 3;
     final int YBUTTON = 4;
-    final int L1 = 5;
-    final int R1 = 6;
+    final int sL1 = 5;
+    final int sR1 = 6;
+    final double DEADZONE = .5;
+    
+    //Contoller input
+    boolean A;
+    boolean B;
+    boolean X;
+    boolean Y;
+    boolean L1;
+    boolean R1;
+    double LX;
+    double LY;
+    double RX;
     
     //Motors
     
@@ -82,10 +94,24 @@ public class Main extends SimpleRobot {
             backLeft.set(100);
         }
         
+        timer.stop();
+        timer.reset();
+        
         frontLeft.set(0);
         frontRight.set(0);
         backRight.set(0);
         backLeft.set(0);
+        
+        timer.start();
+        
+        while(timer.get() < .5){
+            trigger.set(-100);
+        }
+        
+        trigger.set(0);
+        
+        timer.stop();
+        timer.reset();
     }
 
     
@@ -99,6 +125,7 @@ public class Main extends SimpleRobot {
         ballPick = new Jaguar(7);
         
         stick1 = new Joystick(1);
+        stick2 = new Joystick(2);
         
         distance = new AnalogChannel(1);
         
@@ -117,66 +144,47 @@ public class Main extends SimpleRobot {
         
         while(isOperatorControl() && isEnabled()){
             
-            double dir;
-            double alsoDir;
-            double alsoAlsoDir;
+            contollerAssign();
             
-            if(stick1.getRawButton(7) && stick1.getRawButton(8)){
-                
-            }else if(stick1.getRawButton(8)){
-                driveDir = true;
-            }else if(stick1.getRawButton(7)){
-                driveDir = false;
-            }else{
-                
-            }
+            //Set the motors
+            driveSystem.mecanumDrive_Cartesian(LX, LY, RX, 0.0);
             
-            if(driveDir){
-                dir =  stick1.getRawAxis(2);
-                alsoDir = stick1.getRawAxis(1);
-                alsoAlsoDir = -stick1.getRawAxis(4);
-            }else{
-                dir = -stick1.getRawAxis(2);
-                alsoDir = -stick1.getRawAxis(1);
-                alsoAlsoDir = -stick1.getRawAxis(4);
-            }
-            
-            driveSystem.mecanumDrive_Cartesian(alsoDir, dir, alsoAlsoDir, 0.0);
-            
-            if(stick1.getRawButton(3) && stick1.getRawButton(4)){
+            //Pull arm down
+            if(X && Y){
                 armPull.set(0);
-            }else if(stick1.getRawButton(4) ){
+            }else if(Y){
                 armPull.set(-25);
-            }else if(stick1.getRawButton(3) && !armDown.get()){
+            }else if(X && !armDown.get()){
                 armPull.set(25);
             }else{
                 armPull.set(0);
             }
             
-            if(stick1.getRawButton(1) && stick1.getRawButton(2)){
+            //Trigger action
+            if(A && B){
                 trigger.set(0);
-            }else if(stick1.getRawButton(1)){
+            }else if(A){
                 trigger.set(-100);
-            }else if(stick1.getRawButton(2)){
+            }else if(B){
                 trigger.set(100);
             }else{
                 trigger.set(0);
             }
             
-            if(stick1.getRawButton(L1) && stick1.getRawButton(R1)){
+            //Control the picker
+            if(L1 && R1){
                 ballPick.set(0);
-                
-            }else if(stick1.getRawButton(L1)){
+            }else if(L1){
                 ballPick.set(25);
-            }else if(stick1.getRawButton(R1)){
+            }else if(R1){
                 ballPick.set(-1);
             }else{
                 ballPick.set(0);
                 
             }
             
-            driver.println(DriverStationLCD.Line.kUser1, 1, String.valueOf(armDown.get()));
-            driver.updateLCD();
+            //driver.println(DriverStationLCD.Line.kUser1, 1, String.valueOf(armDown.get()));
+            //driver.updateLCD();
             
             
         }
@@ -218,5 +226,61 @@ public class Main extends SimpleRobot {
         
         timer.stop();
         timer.reset();
+    }
+    
+    /*
+        This function is disgusting, but is a necessary evil. It nicely assigns the controller
+        buttons to variables declared above. It makes it so that if there is no input coming in
+        from controller 1, it takes input from controller 2.
+        THIS FUNCTION IS LARGE, CONFUSING, AND GROSS. DO NOT TOUCH.
+    */
+    public void contollerAssign(){
+        
+        if(!stick1.getRawButton(1) && !stick1.getRawButton(2) && !stick1.getRawButton(3) && !stick1.getRawButton(4) &&
+           !stick1.getRawButton(5) && !stick1.getRawButton(6) && !stick1.getRawButton(7) && !stick1.getRawButton(8) &&
+           (stick1.getRawAxis(1) < .5 && stick1.getRawAxis(1) > -.5) && (stick1.getRawAxis(2) < .5 && stick1.getRawAxis(2) > -.5) &&
+           (stick1.getRawAxis(4) < .5 && stick1.getRawAxis(4) > -.5)){
+          
+            //Lance
+            A = stick2.getRawButton(ABUTTON);
+            B = stick2.getRawButton(BBUTTON);
+            X = stick2.getRawButton(XBUTTON);
+            Y = stick2.getRawButton(YBUTTON);
+            L1 = stick2.getRawButton(sL1);
+            R1 = stick2.getRawButton(sR1);
+            
+            if(stick2.getRawAxis(2) < -DEADZONE || stick2.getRawAxis(2) > DEADZONE){
+                LX = stick2.getRawAxis(2);
+            }
+            if(stick2.getRawAxis(1) < -DEADZONE || stick2.getRawAxis(1) > DEADZONE){
+                LY = stick2.getRawAxis(1);
+            }
+            if(stick2.getRawAxis(4) < -DEADZONE || stick2.getRawAxis(4) > DEADZONE){
+                RX = stick2.getRawAxis(4);
+            }
+            
+            
+        }else{
+            
+            //Shubh
+            A = stick1.getRawButton(ABUTTON);
+            B = stick1.getRawButton(BBUTTON);
+            X = stick1.getRawButton(XBUTTON);
+            Y = stick1.getRawButton(YBUTTON);
+            L1 = stick1.getRawButton(sL1);
+            R1 = stick1.getRawButton(sR1);
+            
+            if(stick1.getRawAxis(2) < -DEADZONE || stick1.getRawAxis(2) > DEADZONE){
+                LX = -stick1.getRawAxis(2);
+            }
+            if(stick1.getRawAxis(1) < -DEADZONE || stick1.getRawAxis(1) > DEADZONE){
+                LY = -stick1.getRawAxis(1);
+            }
+            if(stick1.getRawAxis(4) < -DEADZONE || stick1.getRawAxis(4) > DEADZONE){
+                RX = stick1.getRawAxis(4);
+            }
+            
+            
+        }
     }
 }
